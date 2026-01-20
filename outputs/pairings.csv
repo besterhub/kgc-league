@@ -1,0 +1,9 @@
+Pair,Anchor,Anchor Score,Anchor CH,Anchor Perf,Anchor Location,Gunner,Gunner Score,Gunner CH,Gunner Perf,Gunner Location,CH Diff,Pair Combined Score,Constraint
+1,Pieter de la Rey,10.0,4,Excellent,HOME,Jacques vd Berg,10.0,11,Excellent,HOME (Strong),7,20.0,AUTO
+2,Grant Syme,8.8,6,Excellent,ANY (Insufficient Data),Werner van Loggerenburg,6.8,11,Good,AWAY (Limited Home Data),5,15.600000000000001,AUTO
+3,Bennie Knoetze,7.0,2,Excellent,AWAY (Strong),Marcelle Smith,7.4,13,Good,HOME (Strong),11,14.4,AUTO
+4,Mario van der Merwe,7.6,7,Excellent,HOME (Limited Away Data),Oscar Sutton,6.6,15,Average,AWAY (Strong),8,14.2,AUTO
+5,Jaco Bester,6.8,10,Good,HOME (Limited Away Data),Frank Coetzee,7.2,12,Average,HOME (Limited Away Data),2,14.0,AUTO
+6,Brandon Bester,7.8,10,Average,HOME (Strong),Pieter Viljoen,6.0,16,Average,HOME (Strong),6,13.8,AUTO
+7,Greg Park,8.2,3,Excellent,ANY,Hugo Lamprecht,5.4,11,Average,AWAY,8,13.6,REQUIRED
+8,Ian Scott,8.0,5,Good,HOME (Limited Away Data),Matt Maritz,4.0,20,Below Average,HOME (Limited Away Data),15,12.0,REQUIRED (either/or)

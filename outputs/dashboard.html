@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KGC League - Player Analysis Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .legend {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            font-size: 0.8em;
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        .legend-item {
+            margin-bottom: 4px;
+        }
+
+        .legend-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .legend-item strong {
+            color: #334155;
+        }
+
+        .cards-container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .player-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .player-card {
+            position: relative;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            background: white;
+        }
+
+        .player-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        /* Card header with role-based colors */
+        .card-header {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header.header-anchor {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border-bottom: 3px solid #059669;
+        }
+
+        .card-header.header-gunner {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border-bottom: 3px solid #dc2626;
+        }
+
+        .card-header.header-wildcard {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-bottom: 3px solid #d97706;
+        }
+
+        .card-header.header-unknown {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            border-bottom: 3px solid #6b7280;
+        }
+
+        .card-body {
+            padding: 15px 20px;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .role-indicator {
+            font-size: 0.7em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .role-anchor { color: #065f46; }
+        .role-gunner { color: #991b1b; }
+        .role-wildcard { color: #92400e; }
+        .role-unknown { color: #4b5563; }
+
+        .player-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .hi-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .hi-label {
+            font-size: 0.5em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+            margin-bottom: -2px;
+        }
+
+        .hi-value {
+            font-weight: bold;
+            font-size: 0.95em;
+        }
+
+        .score-badge {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 3px 12px 4px 12px;
+            border-radius: 4px;
+            margin: 0;
+        }
+
+        .score-badge-label {
+            font-size: 0.4em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.85;
+            margin-bottom: -1px;
+        }
+
+        .score-badge-value {
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .score-excellent { background: #10b981; color: white; }
+        .score-good { background: #3b82f6; color: white; }
+        .score-average { background: #f59e0b; color: white; }
+        .score-below { background: #ef4444; color: white; }
+
+        .location-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .loc-home { background: #dbeafe; color: #1e40af; }
+        .loc-away { background: #fef3c7; color: #92400e; }
+        .loc-any { background: #e5e7eb; color: #374151; }
+
+        .matchplay-record {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 6px 10px;
+            border-radius: 5px;
+            margin-top: 8px;
+        }
+
+        .matchplay-label {
+            color: #94a3b8;
+            font-size: 0.55em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .matchplay-stats {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .matchplay-wld {
+            display: flex;
+            gap: 6px;
+        }
+
+        .matchplay-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 20px;
+        }
+
+        .matchplay-stat-value {
+            font-weight: bold;
+            font-size: 0.85em;
+            color: #64748b;
+        }
+
+        .matchplay-stat-label {
+            font-size: 0.5em;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+
+        .matchplay-stat.win .matchplay-stat-value { color: #22c55e; }
+        .matchplay-stat.loss .matchplay-stat-value { color: #ef4444; }
+        .matchplay-stat.draw .matchplay-stat-value { color: #eab308; }
+
+        .matchplay-pct {
+            font-weight: bold;
+            font-size: 0.7em;
+            color: #64748b;
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .no-matchplay {
+            color: #cbd5e1;
+            font-size: 0.7em;
+            font-style: italic;
+            text-align: center;
+            padding: 6px;
+            background: #f8fafc;
+            border-radius: 5px;
+            margin-top: 8px;
+        }
+
+        .commitment-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            padding: 2px 8px;
+            border-radius: 0 12px 0 3px;
+            font-size: 0.6em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: white;
+            z-index: 10;
+        }
+
+        .commit-committed { color: #065f46; }
+        .commit-adhoc { color: #92400e; }
+        .commit-tbc { color: #991b1b; }
+        .commit-unknown { color: #374151; }
+
+        .stat-row {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .stat-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .stat-rating {
+            font-size: 0.65em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: left;
+        }
+
+        .stat-rating.rating-excellent { color: #059669; }
+        .stat-rating.rating-good { color: #2563eb; }
+        .stat-rating.rating-average { color: #d97706; }
+        .stat-rating.rating-below { color: #dc2626; }
+        .stat-rating.rating-poor { color: #991b1b; }
+        .stat-rating.rating-improving { color: #059669; }
+        .stat-rating.rating-stable { color: #6b7280; }
+        .stat-rating.rating-declining { color: #dc2626; }
+        .stat-rating.rating-consistent { color: #059669; }
+        .stat-rating.rating-variable { color: #dc2626; }
+        .rounds-values {
+            display: flex;
+            gap: 20px;
+        }
+
+        .round-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 40px;
+        }
+
+        .round-label {
+            font-size: 0.65em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888;
+        }
+
+        .low-rounds {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid #ef4444;
+            color: #ef4444;
+        }
+
+        .rating-row {
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="legend">
+            <div class="legend-item"><strong>Role:</strong> Anchor (low HI + consistent) | Gunner (high HI + consistent) | Wildcard (inconsistent)</div>
+            <div class="legend-item"><strong>HI:</strong> Current Handicap Index</div>
+            <div class="legend-item"><strong>Rating:</strong> Combined Value Score (0-10) based on 60% performance + 30% consistency + 10% trend. Blended 70% HOME + 30% ALL rounds.</div>
+            <div class="legend-item"><strong>Performance:</strong> Avg strokes over/under handicap (lower = better)</div>
+            <div class="legend-item"><strong>Trend:</strong> Change in performance (recent 6 weeks vs oldest 6 weeks). Negative = improving.</div>
+            <div class="legend-item"><strong>Consistency:</strong> Standard deviation of scores (lower = more predictable)</div>
+            <div class="legend-item"><strong>Rounds:</strong> Games played in last 12 weeks. Red circle = insufficient home data (<= 6 rounds).</div>
+        </div>
+        <div class="cards-container">
+            <div class="player-cards" id="playerCards">
+                <!-- Player cards will be generated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Player data (blended scores: 70% HOME + 30% ALL)
+        const playersData = [
+        {
+                "name": "Pieter de la Rey",
+                "performance_score": 10,
+                "performance_rating": "Excellent",
+                "trend_score": 10,
+                "trend_rating": "Improving Strongly",
+                "trend_change": -1.01,
+                "trend_confidence": 0.65,
+                "rounds_oldest_6w": 13,
+                "rounds_recent_6w": 20,
+                "consistency_score": 10,
+                "consistency_rating": "Very Consistent",
+                "stddev": 1.78,
+                "adjusted_stddev": 2.04,
+                "combined_score": 9.86,
+                "player_type": "Steady",
+                "role": "Anchor",
+                "preferred_location": "HOME",
+                "location_advantage": 0.65,
+                "avg_diff": 1.54,
+                "total_rounds": 33,
+                "home_games_pct": 66.7,
+                "home_diff": 1.32,
+                "away_diff": 1.97,
+                "current_hi": 2.8,
+                "commitment": "Committed",
+                "matchplay": {
+                        "wins": 28,
+                        "losses": 26,
+                        "draws": 6,
+                        "matches": 60,
+                        "win_pct": "46.7%",
+                        "record": "28-26-6"
+                },
+                "all_cvs": 10.0,
+                "home_cvs": 9.8
+        },
+        {
+                "name": "Jacques vd Berg",
+                "performance_score": 10,
+                "performance_rating": "Excellent",
+                "trend_score": 8,
+                "trend_rating": "Improving",
+                "trend_change": -0.67,
+                "trend_confidence": 0.5,
+                "rounds_oldest_6w": 9,
+                "rounds_recent_6w": 18,
+                "consistency_score": 10,
+                "consistency_rating": "Very Consistent",
+                "stddev": 2.34,
+                "adjusted_stddev": 3.27,
+                "combined_score": 9.8,
+                "player_type": "Steady",
+                "role": "Gunner",
+                "preferred_location": "HOME (Strong)",
+                "location_advantage": 2.88,
+                "avg_diff": 1.49,
+                "total_rounds": 27,
+                "home_games_pct": 70.4,
+                "home_diff": 0.72,
+                "away_diff": 3.6,
+                "current_hi": 8.4,
+                "commitment": "Committed",
+                "matchplay": {
+                        "wins": 6,
+                        "losses": 6,
+                        "draws": 2,
+                        "matches": 14,
+                        "win_pct": "42.9%",
+                        "record": "6-6-2"
+                },
+                "all_cvs": 9.8,
+                "home_cvs": 9.8
+        },
+        {
+                "name": "Greg Park",
+                "performance_score": 10,
+                "performance_rating": "Excellent",
+                "trend_score": 6,
+                "trend_rating": "Stable",
+                "trend_change": 0.3,
+                "trend_confidence": 0.48,
+                "rounds_oldest_6w": 11,
+                "rounds_recent_6w": 23,
+                "consistency_score": 10,
+                "consistency_rating": "Very Consistent",
+                "stddev": 2.33,
+                "adjusted_stddev": 2.54,
+                "combined_score": 9.6,
+                "player_type": "Steady",
+                "role": "Anchor",
+                "preferred_location": "ANY",
+                "location_advantage": -0.29,
+                "avg_diff": 1.56,
+                "total_rounds": 34,
+                "home_games_pct": 82.4,
+                "home_diff": 1.61,
+                "away_diff": 1.32,
+                "current_hi": 1.3,
+                "commitment": "Committed",
+                "matchplay": {
+                        "wins": 17,
+                        "losses": 18,
+                        "draws": 3,
+                        "matches": 38,
+                        "win_pct": "44.7%",
+                        "record": "17-18-3"
+                },
+                "all_cvs": 9.6,
+                "home_cvs": 9.6
+        },
+        {
+                "name": "Mario van der Merwe",
+                "performance_score": 10,
+                "performance_rating": "Excellent",
+                "trend_score": 4,
+                "trend_rating": "Declining",
+                "trend_change": 1.21,
+                "trend_confidence": 0.83,
+                "rounds_oldest_6w": 6,
+                "rounds_recent_6w": 5,
+                "consistency_score": 10,
+                "consistency_rating": "Very Consistent",
+                "stddev": 2.25,
+                "adjusted_stddev": 2.73,
+                "combined_score": 8.56,
+                "player_type": "Steady",
+                "role": "Anchor",
+                "preferred_location": "HOME (Limited Away Data)",
+                "location_advantage": null,
+                "avg_diff": 1.49,
+                "total_rounds": 11,
+                "home_games_pct": 90.9,
+                "home_diff": 1.72,
+                "away_diff": -0.8,
+                "current_hi": 4.6,
+                "commitment": "Committed",
+                "matchplay": {
+                        "wins": 11,
+                        "losses": 15,
+                        "draws": 3,
+                        "matches": 29,
+                        "win_pct": "37.9%",
+                        "record": "11-15-3"
+                },
+                "all_cvs": 9.4,
+                "home_cvs": 8.2
+        },
+        {
+                "name": "Marcelle Smith",
+                "performance_score": 10,
+                "performance_rating": "Excellent",
+                "trend_score": 2,
+                "trend_rating": "Declining Strongly",
+                "trend_change": 2.16,
+                "trend_confidence": 0.83,
+                "rounds_oldest_6w": 6,
+                "rounds_recent_6w": 5,
+                "consistency_score": 4,
+                "consistency_rating": "Variable",
+                "stddev": 4.14,
+                "adjusted_stddev": 5.21,
+                "combined_score": 7.82,
+                "player_type": "Explosive",
+                "role": "Wildcard",
+                "preferred_location": "HOME (Strong)",
+                "location_advantage": 2.74,
+                "avg_diff": 0.11,
+                "total_rounds": 11,
+                "home_games_pct": 63.6,
+                "home_diff": -0.89,
+                "away_diff": 1.85,
+                "current_hi": 9.4,
+                "commitment": "Committed",
+                "matchplay": null,
+                "all_cvs": 7.4,
+                "home_cvs": 8.0
+        },
+        {
+                "name": "Werner van Loggerenburg",
+                "performance_score": 8,
+                "performance_rating": "Good",
+                "trend_score": 6,
+                "trend_rating": "Stable",
+                "trend_change": 0.32,
+                "trend_confidence": 0.87,
+                "rounds_oldest_6w": 20,
+                "rounds_recent_6w": 23,
+                "consistency_score": 8,
+                "consistency_rating": "Consistent",
+                "stddev": 3.05,
+                "adjusted_stddev": 3.93,
+                "combined_score": 7.8,
+                "player_type": "Steady",
+                "role": "Gunner",
+                "preferred_location": "AWAY (Limited Home Data)",
+                "location_advantage": null,
+                "avg_diff": 2.36,
+                "total_rounds": 43,
+                "home_games_pct": 2.3,
+                "home_diff": 1.4,
+                "away_diff": 2.39,
+                "current_hi": 8.6,
+                "commitment": "Ad Hoc",
+                "matchplay": {
+                        "wins": 9,
+                        "losses": 9,
+                        "draws": 2,
+                        "matches": 20,
+                        "win_pct": "45.0%",
+                        "record": "9-9-2"
+                },
+                "all_cvs": 7.8,
+                "home_cvs": NaN
+        },
+        {
+                "name": "Ian Scott",
+                "performance_score": 8,
+                "performance_rating": "Good",
+                "trend_score": 10,
+                "trend_rating": "Improving Strongly",
+                "trend_change": -2.19,
+                "trend_confidence": 0.83,
+                "rounds_oldest_6w": 6,
+                "rounds_recent_6w": 5,
+                "consistency_score": 6,
+                "consistency_rating": "Moderately Consistent",
+                "stddev": 3.11,
+                "adjusted_stddev": 3.43,
+                "combined_score": 7.6,
+                "player_type": "Steady",
+                "role": "Anchor",
+                "preferred_location": "HOME (Limited Away Data)",
+                "location_advantage": null,
+                "avg_diff": 2.34,
+                "total_rounds": 11,
+                "home_games_pct": 90.9,
+                "home_diff": 2.13,
+                "away_diff": 4.4,
+                "current_hi": 3.2,
+                "commitment": "Ad Hoc",
+                "matchplay": {
+                        "wins": 33,
+                        "losses": 18,
+                        "draws": 6,
+                        "matches": 57,
+                        "win_pct": "57.9%",
+                        "record": "33-18-6"
+                },
+                "all_cvs": 7.6,
+                "home_cvs": 7.6
+        },
+        {
+                "name": "Bennie Knoetze",
+                "performance_score": 10,
+                "performance_rating": "Excellent",
+                "trend_score": 2,
+                "trend_rating": "Declining Strongly",
+                "trend_change": 1.69,
+                "trend_confidence": 0.45,
+                "rounds_oldest_6w": 5,
+                "rounds_recent_6w": 11,
+                "consistency_score": 8,
+                "consistency_rating": "Consistent",
+                "stddev": 2.97,
+                "adjusted_stddev": 3.11,
+                "combined_score": 7.34,
+                "player_type": "Steady",
+                "role": "Anchor",
+                "preferred_location": "AWAY (Strong)",
+                "location_advantage": -1.67,
+                "avg_diff": 1.55,
+                "total_rounds": 16,
+                "home_games_pct": 75.0,
+                "home_diff": 1.94,
+                "away_diff": 0.27,
+                "current_hi": 0.5,
+                "commitment": "TBC",
+                "matchplay": {
+                        "wins": 1,
+                        "losses": 1,
+                        "draws": 0,
+                        "matches": 2,
+                        "win_pct": "50.0%",
+                        "record": "1-1-0"
+                },
+                "all_cvs": 8.6,
+                "home_cvs": 6.8
+        },
+        {
+                "name": "Pieter Viljoen",
+                "performance_score": 6,
+                "performance_rating": "Average",
+                "trend_score": 8,
+                "trend_rating": "Improving",
+                "trend_change": -0.67,
+                "trend_confidence": 0.75,
+                "rounds_oldest_6w": 12,
+                "rounds_recent_6w": 16,
+                "consistency_score": 6,
+                "consistency_rating": "Moderately Consistent",
+                "stddev": 3.48,
+                "adjusted_stddev": 4.73,
+                "combined_score": 7.32,
+                "player_type": "Explosive",
+                "role": "Gunner",
+                "preferred_location": "HOME (Strong)",
+                "location_advantage": 4.29,
+                "avg_diff": 3.08,
+                "total_rounds": 28,
+                "home_games_pct": 78.6,
+                "home_diff": 2.16,
+                "away_diff": 6.45,
+                "current_hi": 12.6,
+                "commitment": "Committed",
+                "matchplay": {
+                        "wins": 11,
+                        "losses": 22,
+                        "draws": 2,
+                        "matches": 35,
+                        "win_pct": "31.4%",
+                        "record": "11-22-2"
+                },
+                "all_cvs": 6.2,
+                "home_cvs": 7.8
+        },
+        {
+                "name": "Ashley Slater",
+                "performance_score": 6,
+                "performance_rating": "Average",
+                "trend_score": 8,
+                "trend_rating": "Improving",
+                "trend_change": -0.16,
+                "trend_confidence": 0.2,
+                "rounds_oldest_6w": 1,
+                "rounds_recent_6w": 5,
+                "consistency_score": 8,
+                "consistency_rating": "Consistent",
+                "stddev": 2.55,
+                "adjusted_stddev": 3.29,
+                "combined_score": 7.22,
+                "player_type": "Steady",
+                "role": "Anchor",
+                "preferred_location": "AWAY",
+                "location_advantage": -0.67,
+                "avg_diff": 2.83,
+                "total_rounds": 6,
+                "home_games_pct": 50.0,
+                "home_diff": 3.17,
+                "away_diff": 2.5,
+                "current_hi": 7.4,
+                "commitment": "Ad Hoc",
+                "matchplay": {
+                        "wins": 12,
+                        "losses": 17,
+                        "draws": 5,
+                        "matches": 34,
+                        "win_pct": "35.3%",
+                        "record": "12-17-5"
+                },
+                "all_cvs": 6.8,
+                "home_cvs": 7.4
+        },
+        {
+                "name": "Brandon Bester",
+                "performance_score": 6,
+                "performance_rating": "Average",
+                "trend_score": 10,
+                "trend_rating": "Improving Strongly",
+                "trend_change": -1.08,
+                "trend_confidence": 0.89,
+                "rounds_oldest_6w": 8,
+                "rounds_recent_6w": 9,
+                "consistency_score": 8,
+                "consistency_rating": "Consistent",
+                "stddev": 2.93,
+                "adjusted_stddev": 3.71,
+                "combined_score": 7.0,
+                "player_type": "Steady",
+                "role": "Anchor",
+                "preferred_location": "HOME (Strong)",
+                "location_advantage": 1.27,
+                "avg_diff": 3.22,
+                "total_rounds": 17,
+                "home_games_pct": 76.5,
+                "home_diff": 2.88,
+                "away_diff": 4.15,
+                "current_hi": 7.8,
+                "commitment": "Committed",
+                "matchplay": {
+                        "wins": 14,
+                        "losses": 14,
+                        "draws": 7,
+                        "matches": 35,
+                        "win_pct": "40.0%",
+                        "record": "14-14-7"
+                },
+                "all_cvs": 7.0,
+                "home_cvs": 7.0
+        },
+        {
+                "name": "Grant Syme",
+                "performance_score": 4,
+                "performance_rating": "Below Average",
+                "trend_score": 10,
+                "trend_rating": "Improving Strongly",
+                "trend_change": -3.91,
+                "trend_confidence": 0.58,
+                "rounds_oldest_6w": 12,
+                "rounds_recent_6w": 7,
+                "consistency_score": 2,
+                "consistency_rating": "Very Variable",
+                "stddev": 5.0,
+                "adjusted_stddev": 5.42,
+                "combined_score": 6.94,
+                "player_type": "Explosive",
+                "role": "Wildcard",
+                "preferred_location": "HOME (Strong)",
+                "location_advantage": 6.83,
+                "avg_diff": 3.98,
+                "total_rounds": 19,
+                "home_games_pct": 68.4,
+                "home_diff": 1.7,
+                "away_diff": 8.53,
+                "current_hi": 4.4,
+                "commitment": "Ad Hoc",
+                "matchplay": {
+                        "wins": 31,
+                        "losses": 19,
+                        "draws": 3,
+                        "matches": 53,
+                        "win_pct": "58.5%",
+                        "record": "31-19-3"
+                },
+                "all_cvs": 4.0,
+                "home_cvs": 8.2
+        },
+        {
+                "name": "Jaco Bester",
+                "performance_score": 8,
+                "performance_rating": "Good",
+                "trend_score": 4,
+                "trend_rating": "Declining",
+                "trend_change": 1.48,
+                "trend_confidence": 0.78,
+                "rounds_oldest_6w": 7,
+                "rounds_recent_6w": 9,
+                "consistency_score": 10,
+                "consistency_rating": "Very Consistent",
+                "stddev": 2.49,
+                "adjusted_stddev": 3.19,
+                "combined_score": 6.94,
+                "player_type": "Steady",
+                "role": "Anchor",
+                "preferred_location": "HOME (Limited Away Data)",
+                "location_advantage": null,
+                "avg_diff": 2.69,
+                "total_rounds": 16,
+                "home_games_pct": 93.8,
+                "home_diff": 2.74,
+                "away_diff": 1.9,
+                "current_hi": 7.4,
+                "commitment": "Committed",
+                "matchplay": {
+                        "wins": 8,
+                        "losses": 9,
+                        "draws": 3,
+                        "matches": 20,
+                        "win_pct": "40.0%",
+                        "record": "8-9-3"
+                },
+                "all_cvs": 8.2,
+                "home_cvs": 6.4
+        },
+        {
+                "name": "Corne van Tonder",
+                "performance_score": 2,
+                "performance_rating": "Poor",
+                "trend_score": 10,
+                "trend_rating": "Improving Strongly",
+                "trend_change": -2.3,
+                "trend_confidence": 0.83,
+                "rounds_oldest_6w": 10,
+                "rounds_recent_6w": 12,
+                "consistency_score": 4,
+                "consistency_rating": "Variable",
+                "stddev": 3.7,
+                "adjusted_stddev": 4.61,
+                "combined_score": 6.9,
+                "player_type": "Explosive",
+                "role": "Wildcard",
+                "preferred_location": "HOME (Strong)",
+                "location_advantage": 4.68,
+                "avg_diff": 4.07,
+                "total_rounds": 22,
+                "home_games_pct": 63.6,
+                "home_diff": 2.37,
+                "away_diff": 7.05,
+                "current_hi": 9.7,
+                "commitment": "Ad Hoc",
+                "matchplay": {
+                        "wins": 5,
+                        "losses": 6,
+                        "draws": 0,
+                        "matches": 11,
+                        "win_pct": "45.5%",
+                        "record": "5-6-0"
+                },
+                "all_cvs": 3.4,
+                "home_cvs": 8.4
+        },
+        {
+                "name": "Mike Turetz",
+                "performance_score": 4,
+                "performance_rating": "Below Average",
+                "trend_score": 8,
+                "trend_rating": "Improving",
+                "trend_change": -0.01,
+                "trend_confidence": 0.71,
+                "rounds_oldest_6w": 17,
+                "rounds_recent_6w": 12,
+                "consistency_score": 10,
+                "consistency_rating": "Very Consistent",
+                "stddev": 2.51,
+                "adjusted_stddev": 2.78,
+                "combined_score": 6.76,
+                "player_type": "Steady",
+                "role": "Anchor",
+                "preferred_location": "HOME (Strong)",
+                "location_advantage": 1.76,
+                "avg_diff": 3.86,
+                "total_rounds": 29,
+                "home_games_pct": 51.7,
+                "home_diff": 3.05,
+                "away_diff": 4.81,
+                "current_hi": 4.1,
+                "commitment": "TBC",
+                "matchplay": {
+                        "wins": 8,
+                        "losses": 9,
+                        "draws": 3,
+                        "matches": 20,
+                        "win_pct": "40.0%",
+                        "record": "8-9-3"
+                },
+                "all_cvs": 6.2,
+                "home_cvs": 7.0
+        },
+        {
+                "name": "Frank Coetzee",
+                "performance_score": 8,
+                "performance_rating": "Good",
+                "trend_score": 6,
+                "trend_rating": "Stable",
+                "trend_change": 0.54,
+                "trend_confidence": 0.88,
+                "rounds_oldest_6w": 8,
+                "rounds_recent_6w": 7,
+                "consistency_score": 6,
+                "consistency_rating": "Moderately Consistent",
+                "stddev": 3.33,
+                "adjusted_stddev": 4.34,
+                "combined_score": 6.08,
+                "player_type": "Explosive",
+                "role": "Gunner",
+                "preferred_location": "HOME (Limited Away Data)",
+                "location_advantage": null,
+                "avg_diff": 2.8,
+                "total_rounds": 15,
+                "home_games_pct": 93.3,
+                "home_diff": 3.21,
+                "away_diff": -2.1,
+                "current_hi": 9.4,
+                "commitment": "Committed",
+                "matchplay": null,
+                "all_cvs": 7.2,
+                "home_cvs": 5.6
+        },
+        {
+                "name": "Claude Kumm",
+                "performance_score": 8,
+                "performance_rating": "Good",
+                "trend_score": 2,
+                "trend_rating": "Declining Strongly",
+                "trend_change": 1.94,
+                "trend_confidence": 0.8,
+                "rounds_oldest_6w": 5,
+                "rounds_recent_6w": 4,
+                "consistency_score": 2,
+                "consistency_rating": "Very Variable",
+                "stddev": 4.51,
+                "adjusted_stddev": 5.18,
+                "combined_score": 5.6,
+                "player_type": "Explosive",
+                "role": "Wildcard",
+                "preferred_location": "HOME (Limited Away Data)",
+                "location_advantage": null,
+                "avg_diff": 2.18,
+                "total_rounds": 9,
+                "home_games_pct": 100.0,
+                "home_diff": 2.18,
+                "away_diff": null,
+                "current_hi": 6.3,
+                "commitment": "Ad Hoc",
+                "matchplay": {
+                        "wins": 1,
+                        "losses": 1,
+                        "draws": 2,
+                        "matches": 4,
+                        "win_pct": "25.0%",
+                        "record": "1-1-2"
+                },
+                "all_cvs": 5.6,
+                "home_cvs": 5.6
+        },
+        {
+                "name": "Oscar Sutton",
+                "performance_score": 8,
+                "performance_rating": "Good",
+                "trend_score": 10,
+                "trend_rating": "Improving Strongly",
+                "trend_change": -1.27,
+                "trend_confidence": 0.45,
+                "rounds_oldest_6w": 5,
+                "rounds_recent_6w": 11,
+                "consistency_score": 4,
+                "consistency_rating": "Variable",
+                "stddev": 3.68,
+                "adjusted_stddev": 4.87,
+                "combined_score": 5.32,
+                "player_type": "Explosive",
+                "role": "Wildcard",
+                "preferred_location": "AWAY (Strong)",
+                "location_advantage": -1.56,
+                "avg_diff": 2.82,
+                "total_rounds": 16,
+                "home_games_pct": 75.0,
+                "home_diff": 3.21,
+                "away_diff": 1.65,
+                "current_hi": 11.6,
+                "commitment": "Ad Hoc",
+                "matchplay": null,
+                "all_cvs": 7.0,
+                "home_cvs": 4.6
+        },
+        {
+                "name": "Hugo Lamprecht",
+                "performance_score": 6,
+                "performance_rating": "Average",
+                "trend_score": 4,
+                "trend_rating": "Declining",
+                "trend_change": 1.24,
+                "trend_confidence": 0.9,
+                "rounds_oldest_6w": 9,
+                "rounds_recent_6w": 10,
+                "consistency_score": 6,
+                "consistency_rating": "Moderately Consistent",
+                "stddev": 3.19,
+                "adjusted_stddev": 4.06,
+                "combined_score": 5.24,
+                "player_type": "Steady",
+                "role": "Gunner",
+                "preferred_location": "AWAY",
+                "location_advantage": -0.71,
+                "avg_diff": 2.91,
+                "total_rounds": 19,
+                "home_games_pct": 68.4,
+                "home_diff": 3.13,
+                "away_diff": 2.42,
+                "current_hi": 8.6,
+                "commitment": "Committed",
+                "matchplay": {
+                        "wins": 23,
+                        "losses": 23,
+                        "draws": 6,
+                        "matches": 52,
+                        "win_pct": "44.2%",
+                        "record": "23-23-6"
+                },
+                "all_cvs": 5.8,
+                "home_cvs": 5.0
+        },
+        {
+                "name": "Era Muller",
+                "performance_score": 4,
+                "performance_rating": "Below Average",
+                "trend_score": 6,
+                "trend_rating": "Stable",
+                "trend_change": 0.27,
+                "trend_confidence": 0.3,
+                "rounds_oldest_6w": 3,
+                "rounds_recent_6w": 10,
+                "consistency_score": 8,
+                "consistency_rating": "Consistent",
+                "stddev": 2.61,
+                "adjusted_stddev": 3.24,
+                "combined_score": 4.98,
+                "player_type": "Steady",
+                "role": "Anchor",
+                "preferred_location": "HOME",
+                "location_advantage": 0.6,
+                "avg_diff": 3.65,
+                "total_rounds": 13,
+                "home_games_pct": 61.5,
+                "home_diff": 3.42,
+                "away_diff": 4.02,
+                "current_hi": 6.5,
+                "commitment": "TBC",
+                "matchplay": null,
+                "all_cvs": 5.4,
+                "home_cvs": 4.8
+        },
+        {
+                "name": "Marius Vos",
+                "performance_score": 2,
+                "performance_rating": "Poor",
+                "trend_score": 6,
+                "trend_rating": "Stable",
+                "trend_change": 0.39,
+                "trend_confidence": 0.64,
+                "rounds_oldest_6w": 9,
+                "rounds_recent_6w": 14,
+                "consistency_score": 6,
+                "consistency_rating": "Moderately Consistent",
+                "stddev": 3.38,
+                "adjusted_stddev": 4.19,
+                "combined_score": 4.44,
+                "player_type": "Explosive",
+                "role": "Gunner",
+                "preferred_location": "HOME (Limited Away Data)",
+                "location_advantage": null,
+                "avg_diff": 4.02,
+                "total_rounds": 23,
+                "home_games_pct": 95.7,
+                "home_diff": 4.06,
+                "away_diff": 3.0,
+                "current_hi": 10.2,
+                "commitment": "Committed",
+                "matchplay": {
+                        "wins": 11,
+                        "losses": 22,
+                        "draws": 6,
+                        "matches": 39,
+                        "win_pct": "28.2%",
+                        "record": "11-22-6"
+                },
+                "all_cvs": 3.6,
+                "home_cvs": 4.8
+        },
+        {
+                "name": "Francois Botha",
+                "performance_score": 4,
+                "performance_rating": "Below Average",
+                "trend_score": 2,
+                "trend_rating": "Declining Strongly",
+                "trend_change": 1.66,
+                "trend_confidence": 0.46,
+                "rounds_oldest_6w": 6,
+                "rounds_recent_6w": 13,
+                "consistency_score": 6,
+                "consistency_rating": "Moderately Consistent",
+                "stddev": 3.51,
+                "adjusted_stddev": 3.98,
+                "combined_score": 4.12,
+                "player_type": "Steady",
+                "role": "Anchor",
+                "preferred_location": "HOME (Limited Away Data)",
+                "location_advantage": null,
+                "avg_diff": 3.38,
+                "total_rounds": 19,
+                "home_games_pct": 100.0,
+                "home_diff": 3.38,
+                "away_diff": null,
+                "current_hi": 5.2,
+                "commitment": "Committed",
+                "matchplay": {
+                        "wins": 7,
+                        "losses": 14,
+                        "draws": 0,
+                        "matches": 21,
+                        "win_pct": "33.3%",
+                        "record": "7-14-0"
+                },
+                "all_cvs": 4.4,
+                "home_cvs": 4.0
+        },
+        {
+                "name": "Matt Maritz",
+                "performance_score": 4,
+                "performance_rating": "Below Average",
+                "trend_score": 4,
+                "trend_rating": "Declining",
+                "trend_change": 1.43,
+                "trend_confidence": 0.62,
+                "rounds_oldest_6w": 8,
+                "rounds_recent_6w": 5,
+                "consistency_score": 4,
+                "consistency_rating": "Variable",
+                "stddev": 3.75,
+                "adjusted_stddev": 5.36,
+                "combined_score": 4.0,
+                "player_type": "Explosive",
+                "role": "Wildcard",
+                "preferred_location": "HOME (Limited Away Data)",
+                "location_advantage": null,
+                "avg_diff": 3.85,
+                "total_rounds": 13,
+                "home_games_pct": 100.0,
+                "home_diff": 3.85,
+                "away_diff": null,
+                "current_hi": 16.0,
+                "commitment": "Ad Hoc",
+                "matchplay": {
+                        "wins": 0,
+                        "losses": 2,
+                        "draws": 0,
+                        "matches": 2,
+                        "win_pct": "0.0%",
+                        "record": "0-2-0"
+                },
+                "all_cvs": 4.0,
+                "home_cvs": 4.0
+        },
+        {
+                "name": "Gareth Hannaway",
+                "performance_score": 2,
+                "performance_rating": "Poor",
+                "trend_score": 4,
+                "trend_rating": "Declining",
+                "trend_change": 1.14,
+                "trend_confidence": 0.67,
+                "rounds_oldest_6w": 4,
+                "rounds_recent_6w": 6,
+                "consistency_score": 8,
+                "consistency_rating": "Consistent",
+                "stddev": 3.06,
+                "adjusted_stddev": 3.85,
+                "combined_score": 4.0,
+                "player_type": "Steady",
+                "role": "Anchor",
+                "preferred_location": "HOME (Limited Away Data)",
+                "location_advantage": null,
+                "avg_diff": 4.84,
+                "total_rounds": 10,
+                "home_games_pct": 100.0,
+                "home_diff": 4.84,
+                "away_diff": null,
+                "current_hi": 8.3,
+                "commitment": "Ad Hoc",
+                "matchplay": {
+                        "wins": 9,
+                        "losses": 7,
+                        "draws": 1,
+                        "matches": 17,
+                        "win_pct": "52.9%",
+                        "record": "9-7-1"
+                },
+                "all_cvs": 4.0,
+                "home_cvs": 4.0
+        },
+        {
+                "name": "Andre Naude",
+                "performance_score": 4,
+                "performance_rating": "Below Average",
+                "trend_score": 6,
+                "trend_rating": "Stable",
+                "trend_change": 0.77,
+                "trend_confidence": 0.43,
+                "rounds_oldest_6w": 3,
+                "rounds_recent_6w": 7,
+                "consistency_score": 4,
+                "consistency_rating": "Variable",
+                "stddev": 4.32,
+                "adjusted_stddev": 5.2,
+                "combined_score": 3.64,
+                "player_type": "Explosive",
+                "role": "Wildcard",
+                "preferred_location": "HOME (Limited Away Data)",
+                "location_advantage": null,
+                "avg_diff": 3.83,
+                "total_rounds": 10,
+                "home_games_pct": 80.0,
+                "home_diff": 3.72,
+                "away_diff": 4.25,
+                "current_hi": 8.2,
+                "commitment": "TBC",
+                "matchplay": null,
+                "all_cvs": 4.2,
+                "home_cvs": 3.4
+        },
+        {
+                "name": "Duncan Pienaar",
+                "performance_score": 2,
+                "performance_rating": "Poor",
+                "trend_score": 8,
+                "trend_rating": "Improving",
+                "trend_change": -0.59,
+                "trend_confidence": 0.83,
+                "rounds_oldest_6w": 5,
+                "rounds_recent_6w": 6,
+                "consistency_score": 4,
+                "consistency_rating": "Variable",
+                "stddev": 3.66,
+                "adjusted_stddev": 4.58,
+                "combined_score": 3.62,
+                "player_type": "Explosive",
+                "role": "Wildcard",
+                "preferred_location": "HOME (Limited Away Data)",
+                "location_advantage": null,
+                "avg_diff": 5.55,
+                "total_rounds": 11,
+                "home_games_pct": 81.8,
+                "home_diff": 5.83,
+                "away_diff": 4.3,
+                "current_hi": 9.5,
+                "commitment": "Committed",
+                "matchplay": {
+                        "wins": 2,
+                        "losses": 3,
+                        "draws": 1,
+                        "matches": 6,
+                        "win_pct": "33.3%",
+                        "record": "2-3-1"
+                },
+                "all_cvs": 3.2,
+                "home_cvs": 3.8
+        },
+        {
+                "name": "Gerdus Theron",
+                "performance_score": 6,
+                "performance_rating": "Average",
+                "trend_score": 8,
+                "trend_rating": "Improving",
+                "trend_change": 0.06,
+                "trend_confidence": 0.83,
+                "rounds_oldest_6w": 5,
+                "rounds_recent_6w": 6,
+                "consistency_score": 2,
+                "consistency_rating": "Very Variable",
+                "stddev": 4.51,
+                "adjusted_stddev": 6.28,
+                "combined_score": 2.9,
+                "player_type": "Explosive",
+                "role": "Wildcard",
+                "preferred_location": "AWAY (Strong)",
+                "location_advantage": -2.82,
+                "avg_diff": 2.84,
+                "total_rounds": 11,
+                "home_games_pct": 54.5,
+                "home_diff": 4.12,
+                "away_diff": 1.3,
+                "current_hi": 16.8,
+                "commitment": "TBC",
+                "matchplay": null,
+                "all_cvs": 5.0,
+                "home_cvs": 2.0
+        },
+        {
+                "name": "Craig Johnson",
+                "performance_score": 2,
+                "performance_rating": "Poor",
+                "trend_score": 4,
+                "trend_rating": "Declining",
+                "trend_change": 1.39,
+                "trend_confidence": 0.5,
+                "rounds_oldest_6w": 4,
+                "rounds_recent_6w": 2,
+                "consistency_score": 2,
+                "consistency_rating": "Very Variable",
+                "stddev": 4.4,
+                "adjusted_stddev": 5.47,
+                "combined_score": 2.62,
+                "player_type": "Explosive",
+                "role": "Wildcard",
+                "preferred_location": "AWAY (Strong)",
+                "location_advantage": -5.1,
+                "avg_diff": 4.85,
+                "total_rounds": 6,
+                "home_games_pct": 50.0,
+                "home_diff": 7.4,
+                "away_diff": 2.3,
+                "current_hi": 10.5,
+                "commitment": "TBC",
+                "matchplay": null,
+                "all_cvs": 2.2,
+                "home_cvs": 2.8
+        },
+        {
+                "name": "Morne Breedt",
+                "performance_score": 2,
+                "performance_rating": "Poor",
+                "trend_score": 2,
+                "trend_rating": "Declining Strongly",
+                "trend_change": 3.49,
+                "trend_confidence": 0.75,
+                "rounds_oldest_6w": 4,
+                "rounds_recent_6w": 3,
+                "consistency_score": 2,
+                "consistency_rating": "Very Variable",
+                "stddev": 4.54,
+                "adjusted_stddev": 5.12,
+                "combined_score": 2.0,
+                "player_type": "Explosive",
+                "role": "Wildcard",
+                "preferred_location": "HOME (Limited Away Data)",
+                "location_advantage": null,
+                "avg_diff": 5.26,
+                "total_rounds": 7,
+                "home_games_pct": 71.4,
+                "home_diff": 5.33,
+                "away_diff": 5.15,
+                "current_hi": 5.8,
+                "commitment": "Ad Hoc",
+                "matchplay": {
+                        "wins": 8,
+                        "losses": 5,
+                        "draws": 1,
+                        "matches": 14,
+                        "win_pct": "57.1%",
+                        "record": "8-5-1"
+                },
+                "all_cvs": 2.0,
+                "home_cvs": 2.0
+        },
+        {
+                "name": "Douglas Austen",
+                "performance_score": 2,
+                "performance_rating": "Poor",
+                "trend_score": 2,
+                "trend_rating": "Declining Strongly",
+                "trend_change": 5.84,
+                "trend_confidence": 0.75,
+                "rounds_oldest_6w": 3,
+                "rounds_recent_6w": 4,
+                "consistency_score": 2,
+                "consistency_rating": "Very Variable",
+                "stddev": 7.2,
+                "adjusted_stddev": 8.92,
+                "combined_score": 2.0,
+                "player_type": "Explosive",
+                "role": "Wildcard",
+                "preferred_location": "HOME (Limited Away Data)",
+                "location_advantage": null,
+                "avg_diff": 4.11,
+                "total_rounds": 7,
+                "home_games_pct": 85.7,
+                "home_diff": 4.08,
+                "away_diff": 4.3,
+                "current_hi": 16.4,
+                "commitment": "TBC",
+                "matchplay": null,
+                "all_cvs": 2.0,
+                "home_cvs": 2.0
+        }
+];
+
+        // Helper to format trend change with +/- sign
+        function formatTrendChange(val) {
+            if (val === null || val === undefined) return 'N/A';
+            const sign = val >= 0 ? '+' : '';
+            return sign + val.toFixed(2);
+        }
+
+        // Helper to get rating color class
+        function getRatingClass(rating) {
+            if (!rating) return '';
+            const r = rating.toLowerCase();
+            if (r.includes('excellent') || r.includes('very consistent')) return 'rating-excellent';
+            if (r.includes('good') || r.includes('consistent')) return 'rating-good';
+            if (r.includes('average') || r.includes('moderate') || r.includes('stable')) return 'rating-average';
+            if (r.includes('improving')) return 'rating-improving';
+            if (r.includes('declining') || r.includes('variable') || r.includes('below') || r.includes('poor')) return 'rating-declining';
+            return '';
+        }
+
+        // Helper to calculate home/away rounds
+        function getHomeAwayRounds(player) {
+            const total = player.total_rounds || 0;
+            const homePct = player.home_games_pct || 0;
+            const homeRounds = Math.round(total * homePct / 100);
+            const awayRounds = total - homeRounds;
+            return { home: homeRounds, away: awayRounds };
+        }
+
+        // Helper to get commitment class
+        function getCommitmentClass(commitment) {
+            if (!commitment) return 'commit-unknown';
+            const c = commitment.toLowerCase();
+            if (c === 'committed') return 'commit-committed';
+            if (c === 'ad hoc') return 'commit-adhoc';
+            if (c === 'tbc') return 'commit-tbc';
+            return 'commit-unknown';
+        }
+
+        // Generate Player Cards
+        function generatePlayerCards(players) {
+            const container = document.getElementById('playerCards');
+
+            if (players.length === 0) {
+                container.innerHTML = '<p style="color: #666; text-align: center; padding: 40px;">No players match the current filter.</p>';
+                return;
+            }
+
+            container.innerHTML = players.map(player => `
+                <div class="player-card" data-role="${player.role}" data-combined="${player.combined_score}" data-location="${player.preferred_location}">
+                    <span class="commitment-badge ${getCommitmentClass(player.commitment)}">
+                        ${player.commitment || 'Unknown'}
+                    </span>
+                    <div class="card-header header-${player.role ? player.role.toLowerCase() : 'unknown'}">
+                        <div class="header-left">
+                            <span class="role-indicator role-${player.role ? player.role.toLowerCase() : 'unknown'}">
+                                ${player.role || 'Unknown'}
+                            </span>
+                            <div class="player-name">
+                                ${player.name}
+                            </div>
+                        </div>
+                        <div class="hi-circle" title="Current Handicap Index">
+                            <span class="hi-label">HI</span>
+                            <span class="hi-value">${player.current_hi != null ? player.current_hi : '-'}</span>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="rating-row">
+                            <span class="score-badge ${
+                                player.combined_score >= 8 ? 'score-excellent' :
+                                player.combined_score >= 6 ? 'score-good' :
+                                player.combined_score >= 5 ? 'score-average' : 'score-below'
+                            }">
+                                <span class="score-badge-label">Rating</span>
+                                <span class="score-badge-value">${player.combined_score ? player.combined_score.toFixed(1) : 'N/A'}</span>
+                            </span>
+                        </div>
+
+                        <div class="stat-row">
+                            <div class="stat-top">
+                                <span class="stat-label">Performance</span>
+                                <span class="stat-value">${player.avg_diff ? player.avg_diff.toFixed(2) : 'N/A'}</span>
+                            </div>
+                            <div class="stat-rating ${getRatingClass(player.performance_rating)}">${player.performance_rating}</div>
+                        </div>
+
+                        <div class="stat-row">
+                            <div class="stat-top">
+                                <span class="stat-label">Trend</span>
+                                <span class="stat-value">${formatTrendChange(player.trend_change)}</span>
+                            </div>
+                            <div class="stat-rating ${getRatingClass(player.trend_rating)}">${player.trend_rating}</div>
+                        </div>
+
+                        <div class="stat-row">
+                            <div class="stat-top">
+                                <span class="stat-label">Consistency</span>
+                                <span class="stat-value">${player.stddev ? player.stddev.toFixed(2) : 'N/A'}</span>
+                            </div>
+                            <div class="stat-rating ${getRatingClass(player.consistency_rating)}">${player.consistency_rating}</div>
+                        </div>
+
+                        <div class="stat-row">
+                            <div class="stat-top">
+                                <span class="stat-label">Rounds</span>
+                                <div class="rounds-values">
+                                    <div class="round-col"><span class="stat-value ${getHomeAwayRounds(player).home <= 6 ? 'low-rounds' : ''}">${getHomeAwayRounds(player).home}</span><span class="round-label">HOME</span></div>
+                                    <div class="round-col"><span class="stat-value">${getHomeAwayRounds(player).away}</span><span class="round-label">AWAY</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${player.matchplay ? `
+                        <div class="matchplay-record">
+                            <span class="matchplay-label">All-Time Match Play</span>
+                            <div class="matchplay-stats">
+                                <div class="matchplay-wld">
+                                    <div class="matchplay-stat win">
+                                        <span class="matchplay-stat-value">${player.matchplay.wins}</span>
+                                        <span class="matchplay-stat-label">W</span>
+                                    </div>
+                                    <div class="matchplay-stat loss">
+                                        <span class="matchplay-stat-value">${player.matchplay.losses}</span>
+                                        <span class="matchplay-stat-label">L</span>
+                                    </div>
+                                    <div class="matchplay-stat draw">
+                                        <span class="matchplay-stat-value">${player.matchplay.draws}</span>
+                                        <span class="matchplay-stat-label">D</span>
+                                    </div>
+                                </div>
+                                <span class="matchplay-pct">${player.matchplay.win_pct}</span>
+                            </div>
+                        </div>
+                        ` : `<div class="no-matchplay">No match play history</div>`}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Initialize with all players
+        generatePlayerCards(playersData);
+    </script>
+</body>
+</html>
