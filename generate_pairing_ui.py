@@ -631,15 +631,279 @@ def generate_pairing_ui():
             margin-top: 5px;
             font-style: italic;
         }}
+
+        /* Mobile toggle button for player pool */
+        .mobile-pool-toggle {{
+            display: none;
+            width: 100%;
+            padding: 12px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }}
+
+        .mobile-pool-toggle:active {{
+            background: #2563eb;
+        }}
+
+        /* Touch-friendly tap indicator */
+        .player-card.tap-highlight,
+        .pair-slot.complete.tap-highlight {{
+            transform: scale(0.98);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+        }}
+
+        /* Selected state for tap-to-place */
+        .player-card.selected {{
+            border-color: #3b82f6;
+            background: #eff6ff;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }}
+
+        .player-drop-zone.tap-target {{
+            border-color: #10b981;
+            background: #f0fdf4;
+            animation: pulse 1s infinite;
+        }}
+
+        @keyframes pulse {{
+            0%, 100% {{ opacity: 1; }}
+            50% {{ opacity: 0.7; }}
+        }}
+
+        /* Mobile-specific styles */
+        @media (max-width: 1024px) {{
+            body {{
+                padding: 10px;
+            }}
+
+            h1 {{
+                font-size: 1.5em;
+                margin-bottom: 5px;
+            }}
+
+            .subtitle {{
+                font-size: 0.8em;
+                margin-bottom: 15px;
+            }}
+
+            .main-layout {{
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }}
+
+            .mobile-pool-toggle {{
+                display: block;
+            }}
+
+            .player-pool {{
+                display: none;
+                max-height: 50vh;
+                margin-bottom: 15px;
+            }}
+
+            .player-pool.mobile-visible {{
+                display: block;
+            }}
+
+            .teams-grid {{
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }}
+
+            .reserves-section {{
+                grid-column: span 1;
+            }}
+
+            .reserves-grid {{
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }}
+
+            .general-reserves-container {{
+                grid-template-columns: 1fr;
+            }}
+
+            .pairing-header {{
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }}
+
+            .actions {{
+                width: 100%;
+                flex-wrap: wrap;
+            }}
+
+            .actions .btn {{
+                flex: 1;
+                min-width: 80px;
+                padding: 10px 8px;
+                font-size: 0.8em;
+            }}
+
+            .pair-slot {{
+                flex-direction: column;
+                gap: 8px;
+                padding: 12px;
+            }}
+
+            .pair-number {{
+                width: 100%;
+                height: auto;
+                padding: 5px;
+                border-radius: 5px;
+                display: flex;
+                justify-content: center;
+            }}
+
+            .pair-players {{
+                flex-direction: column;
+                gap: 8px;
+            }}
+
+            .player-drop-zone {{
+                min-height: 70px;
+                padding: 10px;
+            }}
+
+            .pair-stats {{
+                flex-direction: row;
+                justify-content: space-around;
+                padding: 8px 0 0 0;
+                border-top: 1px solid #e2e8f0;
+                width: 100%;
+            }}
+
+            .summary-bar {{
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+            }}
+
+            .summary-stats {{
+                width: 100%;
+                justify-content: space-around;
+                flex-wrap: wrap;
+                gap: 15px;
+            }}
+
+            .summary-stat {{
+                min-width: 70px;
+            }}
+
+            .summary-value {{
+                font-size: 1.2em;
+            }}
+
+            .player-card {{
+                padding: 12px;
+                margin-bottom: 10px;
+            }}
+
+            .player-name {{
+                font-size: 1em;
+            }}
+
+            .player-stats {{
+                font-size: 0.8em;
+                flex-wrap: wrap;
+            }}
+
+            .filter-tabs {{
+                overflow-x: auto;
+                padding-bottom: 5px;
+                flex-wrap: nowrap;
+            }}
+
+            .filter-tab {{
+                flex-shrink: 0;
+                padding: 8px 12px;
+                font-size: 0.8em;
+            }}
+
+            .team-header {{
+                flex-direction: column;
+                gap: 8px;
+                align-items: flex-start;
+            }}
+
+            .drag-hint {{
+                display: none;
+            }}
+
+            .paired-player .remove-btn {{
+                opacity: 1;
+                width: 24px;
+                height: 24px;
+                font-size: 0.9em;
+            }}
+
+            .export-area textarea {{
+                font-size: 0.7em;
+            }}
+        }}
+
+        @media (max-width: 480px) {{
+            body {{
+                padding: 8px;
+            }}
+
+            h1 {{
+                font-size: 1.3em;
+            }}
+
+            .pairing-area {{
+                padding: 12px;
+            }}
+
+            .team-section {{
+                padding: 10px;
+            }}
+
+            .pair-slot {{
+                padding: 10px;
+            }}
+
+            .actions .btn {{
+                padding: 8px 6px;
+                font-size: 0.75em;
+            }}
+
+            .summary-stats {{
+                gap: 10px;
+            }}
+
+            .summary-stat {{
+                min-width: 60px;
+            }}
+
+            .summary-value {{
+                font-size: 1em;
+            }}
+
+            .summary-label {{
+                font-size: 0.65em;
+            }}
+        }}
     </style>
 </head>
 <body>
     <div class="container">
         <h1>KGC League Pairing Builder</h1>
-        <p class="subtitle">Drag players to create pairs, then drag complete pairs between HOME, AWAY, and RESERVES</p>
+        <p class="subtitle">Drag players to create pairs (or tap to select, then tap slot to place)</p>
 
         <div class="main-layout">
-            <div class="player-pool">
+            <button class="mobile-pool-toggle" id="mobilePoolToggle" onclick="togglePlayerPool()">
+                Show Available Players (<span id="mobilePoolCount">0</span>)
+            </button>
+
+            <div class="player-pool" id="playerPoolContainer">
                 <div class="pool-header">
                     <span class="pool-title">Available Players</span>
                     <span class="pool-count" id="poolCount">0</span>
@@ -761,6 +1025,20 @@ def generate_pairing_ui():
         let currentFilter = 'all';
         let draggedPlayer = null;
         let draggedPair = null;
+        let selectedPlayer = null; // For tap-to-place on mobile
+        let isMobile = window.innerWidth <= 1024;
+
+        // Toggle player pool on mobile
+        function togglePlayerPool() {{
+            const pool = document.getElementById('playerPoolContainer');
+            const btn = document.getElementById('mobilePoolToggle');
+            pool.classList.toggle('mobile-visible');
+            if (pool.classList.contains('mobile-visible')) {{
+                btn.textContent = 'Hide Available Players';
+            }} else {{
+                btn.innerHTML = `Show Available Players (<span id="mobilePoolCount">${{availablePlayers.length}}</span>)`;
+            }}
+        }}
 
         // Initialize
         function init() {{
@@ -777,6 +1055,11 @@ def generate_pairing_ui():
                     currentFilter = tab.dataset.filter;
                     renderPlayerPool();
                 }});
+            }});
+
+            // Update mobile detection on resize
+            window.addEventListener('resize', () => {{
+                isMobile = window.innerWidth <= 1024;
             }});
         }}
 
@@ -904,7 +1187,41 @@ def generate_pairing_ui():
                 draggedPlayer = null;
             }});
 
+            // Touch/tap events for mobile
+            card.addEventListener('click', (e) => {{
+                e.preventDefault();
+                handlePlayerTap(player, card);
+            }});
+
             return card;
+        }}
+
+        // Handle tap on player card (mobile-friendly)
+        function handlePlayerTap(player, card) {{
+            // If already selected, deselect
+            if (selectedPlayer && selectedPlayer.name === player.name) {{
+                clearSelection();
+                return;
+            }}
+
+            // Clear previous selection
+            clearSelection();
+
+            // Select this player
+            selectedPlayer = player;
+            card.classList.add('selected');
+
+            // Highlight available drop zones
+            document.querySelectorAll('.player-drop-zone:not(.has-player)').forEach(zone => {{
+                zone.classList.add('tap-target');
+            }});
+        }}
+
+        // Clear selection state
+        function clearSelection() {{
+            selectedPlayer = null;
+            document.querySelectorAll('.player-card.selected').forEach(c => c.classList.remove('selected'));
+            document.querySelectorAll('.player-drop-zone.tap-target').forEach(z => z.classList.remove('tap-target'));
         }}
 
         // Render all sections
@@ -997,6 +1314,19 @@ def generate_pairing_ui():
                         const idx = parseInt(zone.dataset.index);
                         const role = zone.dataset.role;
                         addPlayerToPair(draggedPlayer, sec, idx, role);
+                    }}
+                }});
+
+                // Click/tap for mobile tap-to-place
+                zone.addEventListener('click', (e) => {{
+                    if (selectedPlayer && !zone.classList.contains('has-player')) {{
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const sec = zone.dataset.section;
+                        const idx = parseInt(zone.dataset.index);
+                        const role = zone.dataset.role;
+                        addPlayerToPair(selectedPlayer, sec, idx, role);
+                        clearSelection();
                     }}
                 }});
             }});
@@ -1103,6 +1433,10 @@ def generate_pairing_ui():
             document.getElementById('committedCount').textContent = committed;
             document.getElementById('homeCvs').textContent = `CVS: ${{homeCvs.toFixed(1)}}`;
             document.getElementById('awayCvs').textContent = `CVS: ${{awayCvs.toFixed(1)}}`;
+
+            // Update mobile pool count
+            const mobileCount = document.getElementById('mobilePoolCount');
+            if (mobileCount) mobileCount.textContent = availablePlayers.length;
         }}
 
         // Clear all
