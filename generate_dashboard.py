@@ -90,20 +90,25 @@ def generate_dashboard(analysis_file, output_file, players_info_file="outputs/pl
         print(f"Loaded commitment for {len(commitment_map)} players")
 
     # Read matchplay records (if available)
+    # Uses 'Exact Match' column to map scraped names to player list names
     matchplay_map = {}
     if os.path.exists(matchplay_file):
         print(f"Reading matchplay records from: {matchplay_file}")
         df_matchplay = pd.read_csv(matchplay_file)
         for _, row in df_matchplay.iterrows():
-            matchplay_map[row['Player Name']] = {
-                'wins': int(row['Wins']),
-                'losses': int(row['Losses']),
-                'draws': int(row['Draws']),
-                'matches': int(row['Matches']),
-                'win_pct': row['Win %'],
-                'record': row['Record']
-            }
-        print(f"Loaded matchplay records for {len(matchplay_map)} players")
+            # Use Exact Match column if available and not empty, otherwise skip
+            exact_match = row.get('Exact Match', '')
+            if pd.notna(exact_match) and str(exact_match).strip():
+                player_name = str(exact_match).strip()
+                matchplay_map[player_name] = {
+                    'wins': int(row['Wins']),
+                    'losses': int(row['Losses']),
+                    'draws': int(row['Draws']),
+                    'matches': int(row['Matches']),
+                    'win_pct': row['Win %'],
+                    'record': row['Record']
+                }
+        print(f"Loaded matchplay records for {len(matchplay_map)} players (using Exact Match column)")
 
     # Filter to players with sufficient data (has Combined Value Score for ALL)
     df_valid = df[df['Combined Value Score'].notna()].copy()

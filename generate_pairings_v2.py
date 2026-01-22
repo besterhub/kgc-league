@@ -27,17 +27,21 @@ def load_data():
     for _, row in players_list.iterrows():
         commitment_map[row['Name']] = str(row[commit_col]).strip()
 
-    # Load matchplay records
+    # Load matchplay records (uses 'Exact Match' column for player name mapping)
     matchplay = pd.read_csv('outputs/matchplay_records.csv')
     matchplay_map = {}
     for _, row in matchplay.iterrows():
-        matchplay_map[row['Player Name']] = {
-            'wins': int(row['Wins']),
-            'losses': int(row['Losses']),
-            'draws': int(row['Draws']),
-            'matches': int(row['Matches']),
-            'win_pct': float(row['Win %'].replace('%', ''))
-        }
+        # Use Exact Match column if available and not empty
+        exact_match = row.get('Exact Match', '')
+        if pd.notna(exact_match) and str(exact_match).strip():
+            player_name = str(exact_match).strip()
+            matchplay_map[player_name] = {
+                'wins': int(row['Wins']),
+                'losses': int(row['Losses']),
+                'draws': int(row['Draws']),
+                'matches': int(row['Matches']),
+                'win_pct': float(row['Win %'].replace('%', ''))
+            }
 
     # Load players_info for current HI
     players_info = pd.read_csv('outputs/players_info.csv')

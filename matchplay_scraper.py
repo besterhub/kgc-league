@@ -79,39 +79,77 @@ class MatchPlayScraper:
         name = ' '.join(name.strip().lower().split())
         return name
 
-    def match_player(self, scraped_name, player_list):
-        """Try to match scraped name to player list"""
+    def match_player_exact(self, scraped_name, player_list):
+        """Try to find an EXACT match (case-insensitive) for scraped name in player list.
+
+        Returns the matched player name from the list, or None if no exact match.
+        """
         normalized_scraped = self.normalize_name(scraped_name)
 
         for player in player_list:
             normalized_player = self.normalize_name(player)
 
-            # Exact match
+            # Exact match only (case-insensitive, whitespace normalized)
             if normalized_scraped == normalized_player:
                 return player
 
-            # Check if one contains the other
-            scraped_parts = set(normalized_scraped.split())
-            player_parts = set(normalized_player.split())
+        return None
 
-            # If at least first and last name match
-            if len(scraped_parts & player_parts) >= 2:
-                return player
+    def suggest_potential_match(self, scraped_name, player_list):
+        """Suggest a potential match for manual review.
 
-            # Check surname and first name start
-            if len(scraped_parts) >= 2 and len(player_parts) >= 2:
-                scraped_list = normalized_scraped.split()
-                player_list_parts = normalized_player.split()
-                scraped_last = scraped_list[-1]
-                player_last = player_list_parts[-1]
+        Uses fuzzy matching to find similar names that might be the same person.
+        Returns the best potential match, or None if no reasonable match found.
+        """
+        normalized_scraped = self.normalize_name(scraped_name)
+        scraped_parts = normalized_scraped.split()
 
-                if scraped_last == player_last:
-                    scraped_first = scraped_list[0]
-                    player_first = player_list_parts[0]
-                    if (scraped_first == player_first or
-                        scraped_first.startswith(player_first[:3]) or
-                        player_first.startswith(scraped_first[:3])):
-                        return player
+        if len(scraped_parts) < 2:
+            return None
+
+        best_match = None
+        best_score = 0
+
+        for player in player_list:
+            normalized_player = self.normalize_name(player)
+            player_parts = normalized_player.split()
+
+            if len(player_parts) < 2:
+                continue
+
+            # Calculate match score based on shared name parts
+            shared_parts = set(scraped_parts) & set(player_parts)
+
+            # Score based on:
+            # - Shared surname (last part) = 3 points
+            # - Shared first name = 2 points
+            # - Other shared parts = 1 point each
+            score = 0
+
+            # Check surname match
+            if scraped_parts[-1] == player_parts[-1]:
+                score += 3
+
+            # Check first name match
+            if scraped_parts[0] == player_parts[0]:
+                score += 2
+            elif scraped_parts[0][:3] == player_parts[0][:3]:
+                # Partial first name match (like "Mike" vs "Mario" won't match)
+                score += 1
+
+            # Add points for other shared parts (like "van", "der", etc.)
+            for part in shared_parts:
+                if part not in [scraped_parts[0], scraped_parts[-1], player_parts[0], player_parts[-1]]:
+                    score += 0.5
+
+            # Only consider as potential match if surname matches and score is reasonable
+            if scraped_parts[-1] == player_parts[-1] and score > best_score:
+                best_score = score
+                best_match = player
+
+        # Only return if we have a reasonably good match (surname + something else)
+        if best_score >= 4:  # Surname (3) + first name match (1+)
+            return best_match
 
         return None
 
@@ -511,8 +549,11 @@ class MatchPlayScraper:
     def scrape_division_player_results(self, division_id, player_list):
         """Scrape player results for a specific division
 
-        Returns all Krugersdorp players, with matched_name set if found in player_list,
-        or unmatched=True flag if not found (for manual review).
+        Returns all Krugersdorp players with:
+        - scraped_name: Original name as scraped from the website
+        - exact_match: Player from list if exact match found, else empty
+        - potential_match: Suggested player for review if no exact match, else empty
+        - needs_review: True if no exact match was found
         """
         print(f"\nScraping player results for division {division_id}...")
 
@@ -537,16 +578,28 @@ class MatchPlayScraper:
                 if 'krugersdorp' not in club and 'kgc' not in club:
                     continue
 
-                matched_name = self.match_player(result['player_name'], player_list)
-                if matched_name:
-                    result['matched_name'] = matched_name
-                    result['unmatched'] = False
-                    print(f"    Matched: {result['player_name']} -> {matched_name}")
+                scraped_name = result['player_name']
+                result['scraped_name'] = scraped_name
+
+                # Try exact match first
+                exact_match = self.match_player_exact(scraped_name, player_list)
+
+                if exact_match:
+                    result['exact_match'] = exact_match
+                    result['potential_match'] = ''
+                    result['needs_review'] = False
+                    print(f"    EXACT MATCH: {scraped_name} -> {exact_match}")
                 else:
-                    # Flag unmatched players for manual review
-                    result['matched_name'] = result['player_name']  # Use original name
-                    result['unmatched'] = True
-                    print(f"    UNMATCHED (review needed): {result['player_name']} ({result.get('club', 'Unknown club')})")
+                    # No exact match - try to suggest a potential match for review
+                    result['exact_match'] = ''
+                    potential = self.suggest_potential_match(scraped_name, player_list)
+                    result['potential_match'] = potential if potential else ''
+                    result['needs_review'] = True
+
+                    if potential:
+                        print(f"    NEEDS REVIEW: {scraped_name} -> potential: {potential}")
+                    else:
+                        print(f"    NEEDS REVIEW: {scraped_name} (no suggestion)")
 
                 all_results.append(result)
 
@@ -675,11 +728,14 @@ class MatchPlayScraper:
     def compile_all_results(self, all_division_results, player_list):
         """Compile results from multiple divisions into player records
 
-        Includes all Krugersdorp players, with unmatched flag for those not in player_list.
+        Uses scraped_name as the key, preserving exact_match and potential_match info.
+        Records that have exact matches can be aggregated by matched name.
         """
+        # First, collect all results by scraped_name
         records = defaultdict(lambda: {
             'wins': 0, 'losses': 0, 'draws': 0, 'played': 0,
-            'divisions': [], 'unmatched': False, 'club': '', 'team': ''
+            'divisions': [], 'club': '', 'team': '',
+            'scraped_name': '', 'exact_match': '', 'potential_match': '', 'needs_review': False
         })
 
         for div_result in all_division_results:
@@ -687,24 +743,34 @@ class MatchPlayScraper:
             season = div_result.get('season', '')
 
             for result in div_result['results']:
-                player = result.get('matched_name', result['player_name'])
+                scraped_name = result.get('scraped_name', result['player_name'])
 
-                records[player]['wins'] += result.get('wins', 0)
-                records[player]['losses'] += result.get('losses', 0)
-                records[player]['draws'] += result.get('draws', 0)
-                records[player]['played'] += result.get('played', 0)
-                records[player]['divisions'].append(f"{season} - {division_name}")
-                records[player]['club'] = result.get('club', '')
-                records[player]['team'] = result.get('team', '')
+                records[scraped_name]['scraped_name'] = scraped_name
+                records[scraped_name]['wins'] += result.get('wins', 0)
+                records[scraped_name]['losses'] += result.get('losses', 0)
+                records[scraped_name]['draws'] += result.get('draws', 0)
+                records[scraped_name]['played'] += result.get('played', 0)
+                records[scraped_name]['divisions'].append(f"{season} - {division_name}")
+                records[scraped_name]['club'] = result.get('club', '')
+                records[scraped_name]['team'] = result.get('team', '')
 
-                # Track if this player is unmatched (for review)
-                if result.get('unmatched', False):
-                    records[player]['unmatched'] = True
+                # Preserve match info
+                records[scraped_name]['exact_match'] = result.get('exact_match', '')
+                records[scraped_name]['potential_match'] = result.get('potential_match', '')
+                records[scraped_name]['needs_review'] = result.get('needs_review', False)
 
         return records
 
     def save_results(self, records, output_file="outputs/matchplay_records.csv"):
-        """Save player records to CSV"""
+        """Save player records to CSV
+
+        Columns:
+        - Scraped Name: Original name as scraped from website
+        - Exact Match: Player name from list if exact match found
+        - Potential Match: Suggested player name for manual review
+        - Needs Review: YES if no exact match (user should verify)
+        - Plus standard stats columns
+        """
         os.makedirs("outputs", exist_ok=True)
 
         rows = []
@@ -728,10 +794,17 @@ class MatchPlayScraper:
             club = record.get('club', '')
             team = record.get('team', '')
 
-            unmatched = record.get('unmatched', False)
+            # New matching columns
+            scraped_name = record.get('scraped_name', player)
+            exact_match = record.get('exact_match', '')
+            potential_match = record.get('potential_match', '')
+            needs_review = record.get('needs_review', False)
 
             rows.append({
-                'Player Name': player,
+                'Scraped Name': scraped_name,
+                'Exact Match': exact_match,
+                'Potential Match': potential_match,
+                'Needs Review': 'YES' if needs_review else '',
                 'Club': club,
                 'Team': team,
                 'Matches': total,
@@ -741,8 +814,7 @@ class MatchPlayScraper:
                 'Win %': f"{win_pct:.1f}%",
                 'Record': f"{wins}-{losses}-{draws}",
                 'Points': record.get('points', 0),
-                'Divisions': divisions,
-                'Needs Review': 'YES' if unmatched else ''
+                'Divisions': divisions
             })
 
         if not rows:
@@ -750,13 +822,27 @@ class MatchPlayScraper:
             return None
 
         df = pd.DataFrame(rows)
-        df = df.sort_values('Wins', ascending=False)
+        # Sort: needs review first, then by wins
+        df = df.sort_values(['Needs Review', 'Wins'], ascending=[False, False])
         df.to_csv(output_file, index=False)
 
         print(f"\n{'='*60}")
         print(f"RESULTS SAVED TO {output_file}")
         print(f"{'='*60}")
-        print(df.to_string(index=False))
+
+        # Show summary
+        needs_review_count = df[df['Needs Review'] == 'YES'].shape[0]
+        exact_match_count = df[df['Exact Match'] != ''].shape[0]
+        print(f"\nSummary:")
+        print(f"  Total records: {len(df)}")
+        print(f"  Exact matches: {exact_match_count}")
+        print(f"  Needs review:  {needs_review_count}")
+
+        if needs_review_count > 0:
+            print(f"\n⚠️  {needs_review_count} records need manual review.")
+            print("  Review the 'Potential Match' column and update as needed.")
+
+        print(f"\n{df.to_string(index=False)}")
 
         return df
 
@@ -855,7 +941,7 @@ def main():
             # Scrape specific division
             scraper.navigate_to_seasons()
             results = scraper.scrape_division_player_results(args.division, player_list)
-            records = {r.get('matched_name', r['player_name']): r for r in results}
+            records = {r.get('scraped_name', r['player_name']): r for r in results}
             scraper.save_results(records)
         else:
             # Full scan

@@ -49,19 +49,23 @@ def load_data():
     players = pd.read_csv('data/players_list.csv')
     commitment_map = dict(zip(players['Name'], players['Commitmnet'].str.strip()))
 
-    # Load matchplay records
+    # Load matchplay records (uses 'Exact Match' column for player name mapping)
     matchplay_map = {}
     if os.path.exists('outputs/matchplay_records.csv'):
         mp = pd.read_csv('outputs/matchplay_records.csv')
         for _, row in mp.iterrows():
-            matchplay_map[row['Player Name']] = {
-                'wins': row['Wins'],
-                'losses': row['Losses'],
-                'draws': row['Draws'],
-                'matches': row['Matches'],
-                'win_pct': float(row['Win %'].replace('%', '')) if pd.notna(row['Win %']) else 0,
-                'record': row['Record']
-            }
+            # Use Exact Match column if available and not empty
+            exact_match = row.get('Exact Match', '')
+            if pd.notna(exact_match) and str(exact_match).strip():
+                player_name = str(exact_match).strip()
+                matchplay_map[player_name] = {
+                    'wins': row['Wins'],
+                    'losses': row['Losses'],
+                    'draws': row['Draws'],
+                    'matches': row['Matches'],
+                    'win_pct': float(row['Win %'].replace('%', '')) if pd.notna(row['Win %']) else 0,
+                    'record': row['Record']
+                }
 
     # Load current HI from players_info
     hi_map = {}
